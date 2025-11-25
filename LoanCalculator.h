@@ -1,67 +1,40 @@
 #ifndef LOANCALCULATOR_H_INCLUDED
 #define LOANCALCULATOR_H_INCLUDED
-#include <cmath>
-#include <iostream>
 
+#include <iostream>
+#include <cmath>
+
+/**
+ * @class LoanCalculator
+ * @brief Calculates loan payments, balances, total interest, and effective interest rates.
+ */
 class LoanCalculator {
 public:
-    long double amount;
-    long double interest;
-    long double interestm;
-    long double payment;
-    int totalmonths;
-    int passedmonths;
-    long double openingfee;
-    long double openingpercent;
+    double amount;          ///< Principal loan amount
+    double interest;        ///< Yearly interest rate (%)
+    double interestm;       ///< Monthly interest rate
+    double payment;         ///< Monthly payment
+    int totalmonths;        ///< Total months of loan
+    int passedmonths;       ///< Number of months already passed
+    double openingfee;      ///< Opening fee
+    double openingpercent;  ///< Opening percent fee
 
-    LoanCalculator() {
-        amount = 0; interest = 0; interestm = 0; payment = 0;
-        totalmonths = 0; passedmonths = 0; openingfee = 0; openingpercent = 0;
-    }
+    LoanCalculator();
 
-   
-    void setamount(long double a){ if(a>=0) amount=a; else amount=0; }
-    void setinterest(long double r){ 
-        if(r>=0) interest=r; else interest=0; 
-        interestm = interest/100.0/12.0; 
-    }
-    void settotalmonths(int m){ totalmonths = (m>=0 ? m : 0); }
-    void setpayment(long double p){ payment=p; }
-    void setpassedmonths(int m){ passedmonths = (m>=0 ? m : 0); }
-    void setopeningfee(long double f){ openingfee = (f>=0 ? f : 0); }
-    void setopeningpercent(long double p){ openingpercent = (p>=0 ? p : 0); }
+    void setamount(double a);
+    void setinterest(double r);
+    void settotalmonths(int m);
+    void setpayment(double p);
+    void setpassedmonths(int m);
+    void setopeningfee(double f);
+    void setopeningpercent(double p);
 
-    // EMI calculation
-    long double calculatemonthlypayment(){
-        if(totalmonths<=0) return 0;
-        long double i = interestm;
-        if(i==0) return amount/totalmonths;
-        long double x = pow(1+i,totalmonths);
-        return (i*amount*x)/(x-1);
-    }
-
-    // Balance after passed months
-    long double calculateloanbalance(){
-        long double i = interestm;
-        if(i==0){
-            long double b = amount - payment*passedmonths;
-            return (b>=0 ? b : 0);
-        }
-        long double x = pow(1+i,passedmonths);
-        long double bn = amount*x - (payment/i)*(x-1);
-        return (bn>=0 ? bn : 0);
-    }
-
-    long double calculatetotalpayment(){ return payment*totalmonths; }
-    long double calculatetotalinterest(){ return calculatetotalpayment() - amount; }
-
-    long double calculateeffectiveinterestrate(){
-        if(amount==0 || totalmonths==0) return 0;
-        long double extra = openingfee + (openingpercent/100.0)*amount;
-        long double extrapermonth = extra/totalmonths;
-        long double addrate = extrapermonth/amount;
-        return (interestm + addrate)*12*100;
-    }
+    double calculatemonthlypayment();
+    double calculateloanbalance();
+    double calculatetotalpayment();
+    double calculatetotalinterest();
+    double calculateeffectiveinterestrate();
 };
 
 #endif
+

@@ -1,61 +1,105 @@
-#include <iostream>
-#include <iomanip>
 #include "LoanCalculator.h"
-using namespace std;
 
-int main() {
-    LoanCalculator loan;
-    long double a, r, fee, per;
-    int m, pm;
+LoanCalculator::LoanCalculator() {
+    amount = 0;
+    interest = 0;
+    interestm = 0;
+    payment = 0;
+    totalmonths = 0;
+    passedmonths = 0;
+    openingfee = 0;
+    openingpercent = 0;
+}
 
-    cout << "Enter loan amount: ";
-    cin >> a;
-    if(a<0) { cout<<"Invalid amount\n"; return 1; }
-    loan.setamount(a);
+void LoanCalculator::setamount(double a) {
+    if(a < 0) {
+        std::cout << "Invalid loan amount, set to 0.\n";
+        amount = 0;
+    } else {
+        amount = a;
+    }
+}
 
-    cout << "Enter yearly interest rate (%): ";
-    cin >> r;
-    if(r<0) { cout<<"Invalid interest rate\n"; return 1; }
-    loan.setinterest(r);
+void LoanCalculator::setinterest(double r) {
+    if(r < 0) {
+        std::cout << "Invalid interest rate, set to 0.\n";
+        interest = 0;
+    } else {
+        interest = r;
+    }
+    interestm = interest / 100.0 / 12.0;
+}
 
-    cout << "Enter total months: ";
-    cin >> m;
-    if(m<=0) { cout<<"Invalid months\n"; return 1; }
-    loan.settotalmonths(m);
+void LoanCalculator::settotalmonths(int m) {
+    if(m <= 0) {
+        std::cout << "Invalid number of months, set to 1.\n";
+        totalmonths = 1;
+    } else {
+        totalmonths = m;
+    }
+}
 
-    loan.setpayment(loan.calculatemonthlypayment());
+void LoanCalculator::setpayment(double p) {
+    payment = p;
+}
 
-    cout << "Enter passed months: ";
-    cin >> pm;
-    if(pm<0) { cout<<"Invalid months\n"; return 1; }
-    loan.setpassedmonths(pm);
+void LoanCalculator::setpassedmonths(int m) {
+    if(m < 0) passedmonths = 0;
+    else passedmonths = m;
+}
 
-    cout << "Enter opening fee: ";
-    cin >> fee;
-    if(fee<0) fee=0;
-    loan.setopeningfee(fee);
+void LoanCalculator::setopeningfee(double f) {
+    if(f < 0) f = 0;
+    openingfee = f;
+}
 
-    cout << "Enter opening percent (% of loan): ";
-    cin >> per;
-    if(per<0) per=0;
-    loan.setopeningpercent(per);
+void LoanCalculator::setopeningpercent(double p) {
+    if(p < 0) p = 0;
+    openingpercent = p;
+}
 
-    long double balance = loan.calculateloanbalance();
-    long double totalpay = loan.calculatetotalpayment();
-    long double interest_total = loan.calculatetotalinterest();
-    long double effrate = loan.calculateeffectiveinterestrate();
+double LoanCalculator::calculatemonthlypayment() {
+    if(totalmonths <= 0 || amount <= 0) return 0;
 
-    cout << fixed << setprecision(2) << endl;
-    cout << "Loan Report" << endl;
-    cout << "===============================" << endl;
-    cout << "Loan amount: " << loan.amount << endl;
-    cout << "Interest rate: " << loan.interest << "%" << endl;
-    cout << "Monthly payment: " << loan.payment << endl;
-    cout << "Balance after " << pm << " months: " << balance << endl;
-    cout << "Total payment: " << totalpay << endl;
-    cout << "Total interest: " << interest_total << endl;
-    cout << "Effective interest (with fees): " << effrate << "%" << endl;
-    cout << "===============================" << endl;
+    double i = interestm;
 
-    return 0;
+    if(i == 0) {
+        return amount / totalmonths;
+    }
+
+    long double x = pow(1 + i, totalmonths);
+    long double P = (i * amount * x) / (x - 1);
+    return static_cast<double>(P);
+}
+
+double LoanCalculator::calculateloanbalance() {
+    double i = interestm;
+
+    if(i == 0) {
+        double b = amount - payment * passedmonths;
+        return (b < 0 ? 0 : b);
+    }
+
+    long double x = pow(1 + i, passedmonths);
+    long double bn = amount * x - (payment / i) * (x - 1);
+    return (bn < 0 ? 0 : static_cast<double>(bn));
+}
+
+double LoanCalculator::calculatetotalpayment() {
+    return payment * totalmonths;
+}
+
+double LoanCalculator::calculatetotalinterest() {
+    return calculatetotalpayment() - amount;
+}
+
+double LoanCalculator::calculateeffectiveinterestrate() {
+    if(amount == 0 || totalmonths == 0) return 0;
+
+    double extra = openingfee + (openingpercent / 100.0) * amount;
+    double extrapermonth = extra / totalmonths;
+    double addrate = extrapermonth / amount;
+
+    double effective = (interestm + addrate) * 12.0 * 100.0;
+    return effective;
 }
