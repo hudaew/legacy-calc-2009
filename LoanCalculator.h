@@ -1,136 +1,67 @@
 #ifndef LOANCALCULATOR_H_INCLUDED
 #define LOANCALCULATOR_H_INCLUDED
+#include <cmath>
+#include <iostream>
 
-/*
-Formulas from: http://oakroadsystems.com/math/loan.htm
-
-Loan balance after n payments have been made:
-  B_n = A*(1+i)^n - (P/i)*((1+i)^n - 1)
-
-
-Payment amount on a loan:
-  P = i*A / (1 - (1+i)^-N)
-
-
-Number of payments on a loan: (You can use any logarithm base, as long as both logs use the same base.)
-                              Aunt Sally offers to lend you $3500 at 6% for that new home theater system you want.
-                              If you pay her back $100 a month, how long will it take?
-                              Solution:  6% per year is 0.5% per month, or 0.005. P = 100 and A = 3500. N = 38.57
-  N = -log(1-i*A/P) / log(1+i)
-
-
-Original loan amount:
-  A = (P/i)*(1 - (1+i)^-N)
-
-
-Interest Rate:
-  i = (((1 + P/A)^(1/q) - 1 )^q - 1)  NOTICE: This is an approximate not an exact solution
-  where q = log(1+1/N) / log(2)
-
-
-Variables:
-A   	the loan amount (the principal sum) or initial investment
-B_n or Bn   	(pronounced B sub n) the balance after n payments have been made. After the last payment has been made, B_N is zero.)
-i   	the interest rate per period, not per year
-      (For instance, if the loan payments are made monthly and the interest rate is 9%, then i = 9%/12 = 0.75% = 0.0075.)
-n   	the number of time periods elapsed at any given point
-N   	the total number of payments for the entire loan or investment
-P   	the amount of each equal payment
-*/
-
-#include <string>
-
-class LoanCalculator
-{
+class LoanCalculator {
 public:
-  LoanCalculator();
-  ~LoanCalculator() {}
+    long double amount;
+    long double interest;
+    long double interestm;
+    long double payment;
+    int totalmonths;
+    int passedmonths;
+    long double openingfee;
+    long double openingpercent;
 
-  //
-  // Setters and Getters
-  //
+    LoanCalculator() {
+        amount = 0; interest = 0; interestm = 0; payment = 0;
+        totalmonths = 0; passedmonths = 0; openingfee = 0; openingpercent = 0;
+    }
 
-  /**
-   * Total loan amount A
-   */
-  inline void setAmount(float A) { amount_ = A; amountSet_ = true; }
-  inline float getAmount() const { return amount_; }
+   
+    void setamount(long double a){ if(a>=0) amount=a; else amount=0; }
+    void setinterest(long double r){ 
+        if(r>=0) interest=r; else interest=0; 
+        interestm = interest/100.0/12.0; 
+    }
+    void settotalmonths(int m){ totalmonths = (m>=0 ? m : 0); }
+    void setpayment(long double p){ payment=p; }
+    void setpassedmonths(int m){ passedmonths = (m>=0 ? m : 0); }
+    void setopeningfee(long double f){ openingfee = (f>=0 ? f : 0); }
+    void setopeningpercent(long double p){ openingpercent = (p>=0 ? p : 0); }
 
-  /**
-   * Initial down payment
-   */
-  inline void setInitialPayment(float initialA)  { initialPayment_ = initialA; }
-  inline float getInitialPayment() const         { return initialPayment_; }
+    // EMI calculation
+    long double calculatemonthlypayment(){
+        if(totalmonths<=0) return 0;
+        long double i = interestm;
+        if(i==0) return amount/totalmonths;
+        long double x = pow(1+i,totalmonths);
+        return (i*amount*x)/(x-1);
+    }
 
-  /**
-   * Yearly interest rate i as in 6.75
-   * Internally .0675/12 will be used
-   * If 6.75 is passed to setInterest()
-   *    getInterest() will return 6.75
-   *    getPeriodicInterest() will return .0675/12.0
-   */
-  void setInterest(float i) { interest_ = i; interestPeriodic_ = i/100.0/12.0; interestSet_ = true; }
-  inline float getInterest() const         { return interest_; }
-  inline float getPeriodicInterest() const { return interestPeriodic_; }
+    // Balance after passed months
+    long double calculateloanbalance(){
+        long double i = interestm;
+        if(i==0){
+            long double b = amount - payment*passedmonths;
+            return (b>=0 ? b : 0);
+        }
+        long double x = pow(1+i,passedmonths);
+        long double bn = amount*x - (payment/i)*(x-1);
+        return (bn>=0 ? bn : 0);
+    }
 
-  void setPayment(float P)        { payment_ = P; paymentSet_ = true; }
-  inline float getPayment() const { return payment_; }
+    long double calculatetotalpayment(){ return payment*totalmonths; }
+    long double calculatetotalinterest(){ return calculatetotalpayment() - amount; }
 
-  void setPeriodTotal(int N)        { periodTotal_ = N; periodTotalSet_ = true; }
-  inline int getPeriodTotal() const { return periodTotal_; }
-
-  void setPeriodElapsed(int n)         { periodElapsed_ = n; periodElapsedSet_ = true; }
-  inline int getPeriodElapsed() const  { return periodElapsed_; }
-
-  inline void setOpeningFee(float fee) { openingFee_ = fee; }
-  inline float getOpeningFee() const   { return openingFee_; }
-
-  inline void setOpeningPercent(float percent) { openingPercent_ = percent; }
-  inline float getOpeningPercent() const       { return openingPercent_; }
-
-  inline void reset() {
-    amount_ = initialPayment_ = interest_ = interestPeriodic_ = payment_ = openingFee_ = openingPercent_ = 0.0;
-    periodTotal_ = periodElapsed_ = 0;
-    amountSet_ = interestSet_ = paymentSet_ = periodTotalSet_ = periodElapsedSet_ = false;
-  }
-
-  //
-  // The actual calculation methods
-  //
-
-  float calculateLoanBalance();
-  float calculatePayment();
-  float calculateNumberPayments();
-  float calculateLoanAmount();
-  float calculateInterestRate();
-  // The effective interest rate, once fees have been applied
-  float calculateEffectiveInterestRate();
-
-  std::string toString();
-
-private:
-  float amount_;        // loan amount
-  bool amountSet_;
-
-  float initialPayment_;     // initial down payment
-
-  float interest_;          // interest rate, something like 6.75
-  float interestPeriodic_;  // this will be .0675/12
-  bool interestSet_;
-
-  float payment_;       // payment amount
-  bool paymentSet_;
-
-  int periodTotal_;     // total payment periods
-  bool periodTotalSet_;
-
-  int periodElapsed_;   // number of elapsed payment periods
-  bool periodElapsedSet_;
-
-  // These two are used if loans charge a fee opening fee or percentage
-  float openingFee_;
-  float openingPercent_;
-
+    long double calculateeffectiveinterestrate(){
+        if(amount==0 || totalmonths==0) return 0;
+        long double extra = openingfee + (openingpercent/100.0)*amount;
+        long double extrapermonth = extra/totalmonths;
+        long double addrate = extrapermonth/amount;
+        return (interestm + addrate)*12*100;
+    }
 };
 
-#endif // LOANCALCULATOR_H_INCLUDED
+#endif
